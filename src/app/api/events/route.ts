@@ -8,6 +8,10 @@ import {
   createClinicalEvent,
   queryClinicalEvents,
 } from "@/lib/arkiv";
+import { enrichEventsWithAuthorNames } from "@/lib/resolve-event-authors";
+import { trimEventFields, validateEventFields } from "@/lib/clinical-event-text";
+import { isInvalidEventSummary } from "@/lib/event-field-limits";
+import { validateStructuredRecordPayload } from "@/lib/structured-record";
 import type { CreateEventBody, EventType } from "@/lib/types";
 
 const VALID_TYPES: EventType[] = [
@@ -30,7 +34,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    const events = await queryClinicalEvents(patientId);
+    const events = await enrichEventsWithAuthorNames(
+      await queryClinicalEvents(patientId),
+    );
     return NextResponse.json({ events });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Error al consultar Arkiv";
@@ -46,7 +52,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
 
-  const { patientId, hospitalId, eventType, summary, authorIdentityId } = body;
+  const { patientId, hospitalId, eventType, summary, detail, authorIdentityId } = body;
   if (!patientId || !hospitalId || !eventType || !summary?.trim()) {
     return NextResponse.json(
       { error: "patientId, hospitalId, eventType y summary son requeridos" },
@@ -58,11 +64,42 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "eventType inválido" }, { status: 400 });
   }
 
+  const trimmedSummary = summary.trim();
+  let payloadSummary = trimmedSummary;
+  let payloadDetail = detail?.trim();
+
+  if (trimmedSummary.startsWith("{")) {
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(trimmedSummary) as Record<string, unknown>;
+    } catch {
+      return NextResponse.json({ error: "Registro estructurado inválido" }, { status: 400 });
+    }
+    const structError = validateStructuredRecordPayload(
+      parsed as Record<string, string>,
+    );
+    if (structError) {
+      return NextResponse.json({ error: structError }, { status: 400 });
+    }
+    if (isInvalidEventSummary(trimmedSummary)) {
+      return NextResponse.json({ error: "Registro de prueba no permitido" }, { status: 400 });
+    }
+  } else {
+    const fields = trimEventFields(trimmedSummary, payloadDetail);
+    const validationError = validateEventFields(fields.summary, fields.detail);
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
+    }
+    payloadSummary = fields.summary;
+    payloadDetail = fields.detail;
+  }
+
   const payload = {
     patientId,
     hospitalId,
     eventType,
-    summary: summary.trim(),
+    summary: payloadSummary,
+    ...(payloadDetail ? { detail: payloadDetail } : {}),
     timestamp: new Date().toISOString(),
   };
 

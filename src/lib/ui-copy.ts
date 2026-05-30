@@ -18,7 +18,7 @@ export const UI_COPY = {
   recordSaved: "Registro guardado",
   recordSavedDetail: "El evento ya forma parte del historial compartido.",
   sessionCheck: "Verificando tu sesión…",
-  loginContinue: "Ingresar a InforMed",
+  loginContinue: "Continuar",
   loginConnecting: "Ingresando…",
   multiHospitalHistory: "Eventos de todos los hospitales · respaldo verificable",
   patientHistorySubtitle: "Registros emitidos por tus profesionales de salud",
@@ -32,12 +32,24 @@ export const UI_COPY = {
     "InforMed · historial clínico verificable · registros compartidos entre hospitales",
   appFooterPatient:
     "InforMed · tu historial verificable · acceso seguro entre instituciones de salud",
+  patientBannerSubtitle: "Historial compartido entre hospitales",
+  doctorGreeting: (name: string) => `Hola, ${name}`,
+  doctorConsoleSubtitle: "Consola clínica · historial verificable entre hospitales",
+  doctorHistoryEmpty: "Sin eventos para este paciente",
+  doctorHistoryEmptyHint:
+    "Usá el botón «Registrar evento» de arriba para cargar el primero.",
+  doctorHistoryFilterEmpty: (filterLabel: string) =>
+    `Sin registros en «${filterLabel}»`,
+  doctorHistoryFilterEmptyHint:
+    "Cambiá el filtro o registrá un evento nuevo con el botón de arriba.",
+  doctorHistorySearchEmpty: "Sin resultados para esta búsqueda",
+  doctorHistorySearchEmptyHint: "Probá otras palabras o limpiá el buscador.",
 } as const;
 
-/** Guiño visible solo en marketing / sección para jurado Arkiv */
-export const JUDGE_COPY = {
+/** Marketing — sección Arkiv en la landing */
+export const ARKIV_SECTION_COPY = {
   tagline: "Web3 que se siente Web2",
-  sectionLabel: "Para jurado Arkiv",
+  sectionLabel: "Respaldo verificable",
   sectionTitle: "Por detrás: infraestructura descentralizada. Delante: una app clínica normal.",
   sectionBody:
     "InforMed usa Arkiv en la red Braga para que cada registro sea verificable e inmutable, sin que médicos ni pacientes vean billeteras, hashes ni exploradores.",

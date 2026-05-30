@@ -52,10 +52,12 @@ export function PatientBanner({
             <p className="mt-0.5 text-sm text-med-muted">
               {subtitle ?? "Historia clínica compartida entre hospitales"}
             </p>
-            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-med-secondary-soft px-2.5 py-1 text-[11px] font-semibold text-med-secondary">
-              <span className="h-1.5 w-1.5 rounded-full bg-med-secondary-hover" />
-              Historial verificado
-            </div>
+            {variant !== "patient" && (
+              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-med-secondary-soft px-2.5 py-1 text-[11px] font-semibold text-med-secondary">
+                <span className="h-1.5 w-1.5 rounded-full bg-med-secondary-hover" />
+                Historial verificado
+              </div>
+            )}
           </div>
         </div>
         {actions}

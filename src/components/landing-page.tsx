@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Logo } from "@/components/ui/logo";
 import { ArkivLoginForm } from "@/components/auth/arkiv-login-form";
-import { JUDGE_COPY } from "@/lib/ui-copy";
+import { ARKIV_SECTION_COPY } from "@/lib/ui-copy";
 import type { LoginSession } from "@/lib/types";
 
 export function LandingPage({
@@ -44,7 +44,7 @@ export function LandingPage({
                   { label: "Inicio", action: goToHome },
                   { label: "Funciones", action: () => scrollToSection("features") },
                   { label: "Cómo funciona", action: () => scrollToSection("como") },
-                  { label: "Para jurado", action: () => scrollToSection("arkiv") },
+                  { label: "Verificación", action: () => scrollToSection("arkiv") },
                 ].map((item) => (
                   <button
                     key={item.label}
@@ -67,7 +67,7 @@ export function LandingPage({
             </div>
           </nav>
 
-          <HomeView onStart={goToLogin} onScrollTo={scrollToSection} />
+          <HomeView onStart={goToLogin} />
         </>
       ) : (
         <LoginView onLoginSuccess={onLoginSuccess} onBack={goToHome} />
@@ -76,13 +76,7 @@ export function LandingPage({
   );
 }
 
-function HomeView({
-  onStart,
-  onScrollTo,
-}: {
-  onStart: () => void;
-  onScrollTo: (id: string) => void;
-}) {
+function HomeView({ onStart }: { onStart: () => void }) {
   return (
     <div>
       <header className="relative overflow-hidden py-16 pb-14 md:py-[84px] md:pb-[70px] med-dot-grid">
@@ -107,9 +101,6 @@ function HomeView({
                 <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5 12h14M13 6l6 6-6 6"/>
                 </svg>
-              </button>
-              <button type="button" onClick={() => onScrollTo("como")} className="med-btn-secondary">
-                Ver cómo funciona
               </button>
             </div>
             <div className="flex gap-2 items-center mt-[26px] text-[13.5px] text-med-muted">
@@ -414,10 +405,10 @@ function HomeView({
               <div>
                 <span className="inline-flex items-center gap-2 text-[12px] tracking-[0.1em] uppercase text-med-secondary-hover mb-[18px] font-semibold">
                   <span className="w-[7px] h-[7px] rounded-full bg-med-secondary-hover inline-block"></span>
-                  {JUDGE_COPY.sectionLabel} · {JUDGE_COPY.tagline}
+                  {ARKIV_SECTION_COPY.sectionLabel} · {ARKIV_SECTION_COPY.tagline}
                 </span>
-                <h2 className="font-fraunces text-[clamp(26px,3vw,36px)] font-medium leading-[1.04] tracking-[-0.015em] text-white">{JUDGE_COPY.sectionTitle}</h2>
-                <p className="text-[rgba(244,241,233,.78)] text-[16.5px] mt-4">{JUDGE_COPY.sectionBody}</p>
+                <h2 className="font-fraunces text-[clamp(26px,3vw,36px)] font-medium leading-[1.04] tracking-[-0.015em] text-white">{ARKIV_SECTION_COPY.sectionTitle}</h2>
+                <p className="text-[rgba(244,241,233,.78)] text-[16.5px] mt-4">{ARKIV_SECTION_COPY.sectionBody}</p>
               </div>
               <div className="flex flex-col gap-3">
                 <div className="bg-[rgba(255,255,255,.06)] border border-[rgba(255,255,255,.13)] rounded-[14px] p-4">
@@ -457,7 +448,7 @@ function HomeView({
       {/* Footer */}
       <footer className="mt-8 border-t border-med-line py-10 md:mt-[30px] md:py-12">
         <div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-4 px-5 md:px-7">
-          <Logo size="sm" />
+          <Logo size="footer" />
           <small className="text-[13px] text-med-muted">Hackathon Arkiv · Puna Tech 2026 · Salto, Argentina</small>
         </div>
       </footer>
@@ -499,37 +490,36 @@ function LoginView({
       </header>
 
       <div className="grid flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-        <aside className="relative order-2 hidden overflow-hidden bg-med-ink text-med-primary lg:order-1 lg:flex lg:flex-col lg:justify-between lg:p-12">
+        <aside className="relative order-2 hidden overflow-hidden bg-med-ink text-med-primary lg:order-1 lg:flex lg:flex-col lg:p-12">
           <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,.05)_1px,transparent_1px)] bg-[size:24px_24px]" />
-          <div className="relative z-10">
-            <Logo light />
+          <div className="relative z-10 flex flex-1 flex-col justify-center py-8">
+            <div className="max-w-md">
+              <h2 className="font-fraunces text-[clamp(26px,3vw,40px)] font-medium leading-[1.06] tracking-[-0.015em] text-white">
+                Tu historial clínico,{" "}
+                <span className="text-med-secondary-hover">en un solo paso</span>
+              </h2>
+              <p className="mt-4 text-[15px] leading-relaxed text-[rgba(244,241,233,.78)]">
+                Ingresá con tu correo. Tu Arkiv ID se crea o recupera al continuar — sin contraseñas
+                ni configuración técnica.
+              </p>
+              <ul className="mt-8 space-y-3 text-sm text-[rgba(244,241,233,.85)]">
+                {[
+                  "Elegís si sos profesional de la salud o paciente",
+                  "Completás correo y nombre",
+                  "Accedés al historial compartido entre hospitales",
+                ].map((step, i) => (
+                  <li key={step} className="flex gap-3">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-med-secondary/25 text-xs font-bold text-med-secondary-hover">
+                      {i + 1}
+                    </span>
+                    {step}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-          <div className="relative z-10 max-w-md">
-            <h2 className="font-fraunces text-[clamp(26px,3vw,40px)] font-medium leading-[1.06] tracking-[-0.015em] text-white">
-              Tu historial clínico,{" "}
-              <span className="text-med-secondary-hover">en un solo paso</span>
-            </h2>
-            <p className="mt-4 text-[15px] leading-relaxed text-[rgba(244,241,233,.78)]">
-              Ingresá con tu correo. InforMed activa tu Arkiv ID automáticamente — sin contraseñas
-              ni configuración técnica.
-            </p>
-            <ul className="mt-8 space-y-3 text-sm text-[rgba(244,241,233,.85)]">
-              {[
-                "Elegís si sos profesional de la salud o paciente",
-                "Completás correo y nombre",
-                "Accedés al historial compartido entre hospitales",
-              ].map((step, i) => (
-                <li key={step} className="flex gap-3">
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-med-secondary/25 text-xs font-bold text-med-secondary-hover">
-                    {i + 1}
-                  </span>
-                  {step}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <p className="relative z-10 text-xs text-[rgba(244,241,233,.5)]">
-            {JUDGE_COPY.tagline} · infraestructura Arkiv
+          <p className="relative z-10 shrink-0 text-xs text-[rgba(244,241,233,.5)]">
+            {ARKIV_SECTION_COPY.tagline} · infraestructura Arkiv
           </p>
         </aside>
 
@@ -539,10 +529,10 @@ function LoginView({
               Acceso
             </p>
             <h1 className="mt-1 font-fraunces text-[clamp(28px,4vw,34px)] font-medium text-med-ink">
-              Ingresá a InforMed
+              Ingresá a tu historial
             </h1>
             <p className="mt-2 text-sm text-med-ink-soft">
-              Solo tu correo. Tu Arkiv ID se crea o recupera al continuar.
+              Elegí tu rol, completá correo y nombre. Listo en un paso.
             </p>
 
             <div className="mt-8">

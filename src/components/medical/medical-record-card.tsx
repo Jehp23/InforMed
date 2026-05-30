@@ -1,4 +1,5 @@
 import { ValidationBadge } from "./validation-badge";
+import { eventTypeDisplayLabel } from "@/lib/event-display-labels";
 
 export function MedicalRecordCard({
   record,
@@ -9,8 +10,10 @@ export function MedicalRecordCard({
     id: string;
     title: string;
     type: string;
+    typeLabel?: string;
     date: string;
     institution?: string;
+    doctor?: string;
     status: "declared" | "document_attached" | "ai_extracted" | "pending_review" | "verified" | "institution_issued" | "corrected" | "discarded";
     isPinned?: boolean;
   };
@@ -25,7 +28,9 @@ export function MedicalRecordCard({
             <h3 className="font-semibold text-[15px] text-med-ink">{record.title}</h3>
             <ValidationBadge status={record.status} />
           </div>
-          <p className="mt-1 text-xs capitalize text-med-muted">{record.type.replace(/_/g, " ")}</p>
+          <p className="mt-1 text-xs text-med-muted">
+            {record.typeLabel ?? eventTypeDisplayLabel(record.type)}
+          </p>
         </div>
         {onPin && (
           <button
@@ -42,6 +47,11 @@ export function MedicalRecordCard({
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-med-ink-soft">
         <span>{record.date}</span>
         {record.institution && <span>{record.institution}</span>}
+        {record.doctor && (
+          <span className="text-med-muted">
+            Registrado por {record.doctor}
+          </span>
+        )}
       </div>
 
       {onViewDetails && (

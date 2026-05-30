@@ -37,7 +37,13 @@ export function AppShell({
     <div className="min-h-screen text-med-text">
       <header
         className={`sticky top-0 z-40 backdrop-blur-md ${cfg.headerClass}`}
-        style={{ ["--app-header-h" as string]: toolbar ? "7.75rem" : "4.25rem" }}
+        style={{
+          ["--app-header-h" as string]: toolbar
+            ? role === "doctor"
+              ? "5.5rem"
+              : "7.75rem"
+            : "4.25rem",
+        }}
       >
         <div className="mx-auto max-w-[90rem] px-4">
           <div className="flex items-center justify-between gap-3 py-2.5">

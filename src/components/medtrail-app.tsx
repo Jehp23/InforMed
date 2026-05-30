@@ -15,9 +15,11 @@ import {
 import { deriveClinicalSummaryFromEvents } from "@/lib/derive-patient-summary";
 import { collectRecordLinkPhrases } from "@/lib/medibot-record-links";
 import { UI_COPY } from "@/lib/ui-copy";
+import { HISTORY_FILTERS } from "@/components/medical/filter-chips";
 import {
   eventToTimelineRecord,
   filterTimelineEvents,
+  isTimelineEvent,
 } from "@/lib/timeline-utils";
 import type { EventType, StructuredRecordFormData, TimelineDisplayRecord } from "@/lib/types";
 import { MediBotWidget } from "@/components/doctor/historial-assist-panel";
@@ -132,9 +134,38 @@ export function MedtrailApp({
   );
 
   const timelineRecords = useMemo(
-    () => filteredEvents.map((ev) => eventToTimelineRecord(ev, pinnedRecords)),
+    () =>
+      filteredEvents
+        .map((ev) => eventToTimelineRecord(ev, pinnedRecords))
+        .filter((r): r is TimelineDisplayRecord => r != null),
     [filteredEvents, pinnedRecords],
   );
+
+  const hasAnyTimelineEvents = useMemo(
+    () => events.some((ev) => isTimelineEvent(ev)),
+    [events],
+  );
+
+  const historyEmptyCopy = useMemo(() => {
+    if (searchQuery.trim()) {
+      return {
+        message: UI_COPY.doctorHistorySearchEmpty,
+        hint: UI_COPY.doctorHistorySearchEmptyHint,
+      };
+    }
+    if (activeFilter !== "all" && hasAnyTimelineEvents) {
+      const filterLabel =
+        HISTORY_FILTERS.find((f) => f.id === activeFilter)?.label ?? activeFilter;
+      return {
+        message: UI_COPY.doctorHistoryFilterEmpty(filterLabel),
+        hint: UI_COPY.doctorHistoryFilterEmptyHint,
+      };
+    }
+    return {
+      message: UI_COPY.doctorHistoryEmpty,
+      hint: UI_COPY.doctorHistoryEmptyHint,
+    };
+  }, [searchQuery, activeFilter, hasAnyTimelineEvents]);
 
   const derivedSummary = useMemo(
     () => deriveClinicalSummaryFromEvents(events),
@@ -261,7 +292,11 @@ export function MedtrailApp({
     }
   };
 
-  const handleQuickRecord = async (eventType: EventType, summary: string) => {
+  const handleQuickRecord = async (
+    eventType: EventType,
+    summary: string,
+    detail?: string,
+  ) => {
     setSubmitting(true);
     setActionError(null);
     try {
@@ -273,6 +308,7 @@ export function MedtrailApp({
           hospitalId,
           eventType,
           summary,
+          ...(detail ? { detail } : {}),
           authorIdentityId: session.arkivId,
         }),
       });
@@ -339,62 +375,67 @@ export function MedtrailApp({
 
   const handleViewRecordDetails = (recordId: string) => {
     const record = events.find((e) => e.entityKey === recordId);
-    if (record) setSelectedRecord(eventToTimelineRecord(record, pinnedRecords));
+    if (record) {
+      const row = eventToTimelineRecord(record, pinnedRecords);
+      if (row) setSelectedRecord(row);
+    }
   };
 
-  const toolbar = (
-    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-      <div className="flex flex-wrap items-center gap-2">
-        <div
-          className="flex h-9 items-center gap-1.5 rounded-full border border-med-line bg-white pl-3 pr-1"
-          data-tour="hospital-select"
-        >
-          <span className="text-xs font-medium text-med-muted">Hospital</span>
-          <select
-            className="med-toolbar-select max-w-[9.5rem] border-0 bg-transparent py-0 shadow-none disabled:opacity-50"
-            value={hospitalId}
-            onChange={(e) => setHospitalId(e.target.value)}
-            disabled={isPatientLoading}
-            aria-label="Hospital"
-          >
-            {HOSPITALS.map((h) => (
-              <option key={h.id} value={h.id}>
-                {h.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex h-9 items-center gap-1.5 rounded-full border border-med-line bg-white pl-3 pr-1">
-          <span className="text-xs font-medium text-med-muted">Paciente</span>
-          <select
-            className="med-toolbar-select max-w-[10.5rem] border-0 bg-transparent py-0 shadow-none disabled:opacity-50"
-            value={patientId}
-            onChange={(e) => handlePatientChange(e.target.value)}
-            disabled={isPatientLoading}
-            aria-label="Paciente"
-          >
-            {DEMO_PATIENTS.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+  const doctorFirstName = session.displayName.split(/\s+/)[0] ?? "Doctor/a";
 
-      <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={() => setTourOpen(true)} className="med-toolbar-btn">
-          Guía
-        </button>
-        <button
-          type="button"
-          onClick={() => void reload(patientId)}
-          disabled={loading || refreshing}
-          className="med-toolbar-btn"
+  const contextSelectors = (
+    <>
+      <div
+        className="flex h-10 items-center gap-1.5 rounded-full border border-med-line bg-white pl-3 pr-1 shadow-[var(--med-shadow-soft)]"
+        data-tour="hospital-select"
+      >
+        <span className="text-xs font-medium text-med-muted">Hospital</span>
+        <select
+          className="med-toolbar-select max-w-[9.5rem] border-0 bg-transparent py-0 shadow-none disabled:opacity-50"
+          value={hospitalId}
+          onChange={(e) => setHospitalId(e.target.value)}
+          disabled={isPatientLoading}
+          aria-label="Hospital"
         >
-          {loading ? UI_COPY.loadingHistory : refreshing ? UI_COPY.syncing : "Actualizar"}
-        </button>
+          {HOSPITALS.map((h) => (
+            <option key={h.id} value={h.id}>
+              {h.name}
+            </option>
+          ))}
+        </select>
       </div>
+      <div className="flex h-10 items-center gap-1.5 rounded-full border border-med-line bg-white pl-3 pr-1 shadow-[var(--med-shadow-soft)]">
+        <span className="text-xs font-medium text-med-muted">Paciente</span>
+        <select
+          className="med-toolbar-select max-w-[10.5rem] border-0 bg-transparent py-0 shadow-none disabled:opacity-50"
+          value={patientId}
+          onChange={(e) => handlePatientChange(e.target.value)}
+          disabled={isPatientLoading}
+          aria-label="Paciente"
+        >
+          {DEMO_PATIENTS.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    </>
+  );
+
+  const toolbar = (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      <button type="button" onClick={() => setTourOpen(true)} className="med-toolbar-btn">
+        Guía
+      </button>
+      <button
+        type="button"
+        onClick={() => void reload(patientId)}
+        disabled={loading || refreshing}
+        className="med-toolbar-btn"
+      >
+        {loading ? UI_COPY.loadingHistory : refreshing ? UI_COPY.syncing : "Actualizar"}
+      </button>
     </div>
   );
 
@@ -425,6 +466,16 @@ export function MedtrailApp({
           className={isPatientLoading ? "pointer-events-none select-none opacity-50" : ""}
           aria-busy={isPatientLoading}
         >
+          <header className="mb-5">
+            <p className="text-sm font-semibold text-med-secondary">
+              {UI_COPY.doctorGreeting(doctorFirstName)}
+            </p>
+            <h2 className="mt-1 font-display text-[clamp(1.35rem,2.5vw,1.75rem)] font-semibold text-med-ink">
+              {UI_COPY.roleDoctor}
+            </h2>
+            <p className="mt-1 text-sm text-med-muted">{UI_COPY.doctorConsoleSubtitle}</p>
+          </header>
+
           {displayError && (
             <div className="mb-4 rounded-2xl border border-med-coral/25 bg-[rgba(224,101,76,.06)] px-4 py-3 text-sm text-med-coral">
               {displayError}
@@ -451,9 +502,7 @@ export function MedtrailApp({
                   <h1 className="truncate font-display text-lg font-semibold text-med-ink sm:text-xl">
                     {currentPatient?.label ?? patientId}
                   </h1>
-                  <p className="mt-0.5 text-sm text-med-muted">
-                    {currentHospital?.name} · {session.displayName}
-                  </p>
+                  <p className="mt-0.5 text-sm text-med-muted">{UI_COPY.multiHospitalHistory}</p>
                   <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-med-secondary-soft px-2.5 py-0.5 text-xs font-medium text-med-secondary">
                     {UI_COPY.verifiedHistory}
                   </span>
@@ -531,13 +580,17 @@ export function MedtrailApp({
               )}
           </section>
 
-          <div className="mb-5 flex flex-wrap items-center gap-3" data-tour="doctor-actions">
+          <div
+            className="mb-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center"
+            data-tour="doctor-actions"
+          >
+            <div className="flex flex-wrap items-center gap-2">{contextSelectors}</div>
             <button
               type="button"
               data-tour="register-event"
               onClick={() => setShowCreateForm(true)}
               disabled={isPatientLoading}
-              className="med-btn-primary justify-center px-6 py-3 text-[15px] disabled:opacity-50"
+              className="med-btn-primary justify-center px-6 py-3 text-[15px] disabled:opacity-50 sm:ml-auto"
             >
               + Registrar evento
             </button>
@@ -557,10 +610,8 @@ export function MedtrailApp({
               onFilterChange={setActiveFilter}
               timelineRecords={timelineRecords}
               onViewDetails={handleViewRecordDetails}
-              emptyMessage="Sin eventos para este paciente"
-              emptyHint="Usá «Registrar evento» para publicar el primero en Arkiv."
-              emptyActionLabel="+ Registrar evento"
-              onEmptyAction={() => setShowCreateForm(true)}
+              emptyMessage={historyEmptyCopy.message}
+              emptyHint={historyEmptyCopy.hint}
               summaryData={summaryData}
             />
           </div>
@@ -580,7 +631,7 @@ export function MedtrailApp({
           }
           initialSummary={recordDraftSeed?.summary}
           initialEventType={recordDraftSeed?.eventType}
-          onQuickSubmit={(type, text) => void handleQuickRecord(type, text)}
+          onQuickSubmit={(type, text, detail) => void handleQuickRecord(type, text, detail)}
           onSubmit={(data) => void handleCreateRecord(data)}
           onCancel={() => {
             setShowCreateForm(false);

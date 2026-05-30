@@ -1,3 +1,5 @@
+import { eventTitleFromRecord } from "./clinical-event-text";
+import { isTestOrSpamSummary } from "./event-field-limits";
 import { EVENT_TYPE_LABELS, HOSPITALS } from "./constants";
 import type { ClinicalEventRecord } from "./types";
 import { formatEventDescription, isTimelineEvent } from "./timeline-utils";
@@ -59,7 +61,9 @@ function extractAllergyLabel(ev: ClinicalEventRecord): string {
     return normalizeAllergySubstance(String(structured.substance));
   }
   const plain = ev.summary?.trim();
-  if (plain && !plain.startsWith("{")) return normalizeAllergySubstance(plain);
+  if (plain && !plain.startsWith("{")) {
+    return normalizeAllergySubstance(eventTitleFromRecord(ev));
+  }
   return "";
 }
 
@@ -135,6 +139,7 @@ export function collectAllergiesFromEvents(events: ClinicalEventRecord[]): strin
 
   for (const ev of timeline) {
     if (!isAllergyEvent(ev)) continue;
+    if (isTestOrSpamSummary(ev.summary)) continue;
     pushAllergy(allergies, seen, extractAllergyLabel(ev));
   }
 
@@ -180,9 +185,11 @@ export function deriveClinicalSummaryFromEvents(
   const seenHosp = new Set<string>();
   for (const e of timeline) {
     if (!isHospitalizationEvent(e)) continue;
+    const plainReason = !e.summary.startsWith("{") ? eventTitleFromRecord(e) : "";
     const entry = {
       date: new Date(e.timestamp).toLocaleDateString("es-AR"),
       reason:
+        plainReason ||
         formatEventDescription(e.summary).split("\n")[0]?.trim() ||
         EVENT_TYPE_LABELS[e.eventType] ||
         "Internación",

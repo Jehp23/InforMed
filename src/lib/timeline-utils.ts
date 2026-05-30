@@ -1,4 +1,14 @@
+import {
+  clinicalHeadlineFromSummary,
+  eventDetailFromRecord,
+} from "./clinical-event-text";
+import { eventTypeDisplayLabel } from "./event-display-labels";
+import { isInvalidEventSummary } from "./event-field-limits";
 import { EVENT_TYPE_LABELS, HOSPITALS } from "./constants";
+import {
+  formatStructuredRecordDescription,
+  parseStructuredRecord,
+} from "./structured-record";
 import type { ClinicalEventRecord, TimelineDisplayRecord } from "./types";
 
 export function isTimelineEvent(ev: ClinicalEventRecord): boolean {
@@ -11,27 +21,12 @@ export function isTimelineEvent(ev: ClinicalEventRecord): boolean {
 }
 
 export function formatEventDescription(summary: string): string {
+  const structured = formatStructuredRecordDescription(summary);
+  if (structured) return structured;
+
   try {
-    const parsed = JSON.parse(summary) as Record<string, unknown>;
-    if (parsed.type === "structured_record") {
-      const lines: string[] = [];
-      const labels: Record<string, string> = {
-        recordType: "Tipo",
-        substance: "Sustancia",
-        procedure: "Procedimiento",
-        institution: "Institución",
-        date: "Fecha",
-        reason: "Motivo",
-        description: "Descripción",
-        diagnosis: "Diagnóstico",
-      };
-      for (const [key, value] of Object.entries(parsed)) {
-        if (key === "type" || value === undefined || value === "") continue;
-        const label = labels[key] ?? key;
-        lines.push(`${label}: ${String(value)}`);
-      }
-      return lines.join("\n");
-    }
+    const parsed = JSON.parse(summary) as { type?: string };
+    if (parsed.type === "structured_record") return summary;
   } catch {
     // plain text
   }
@@ -41,57 +36,63 @@ export function formatEventDescription(summary: string): string {
 export function eventToTimelineRecord(
   ev: ClinicalEventRecord,
   pinnedIds?: Set<string>,
-): TimelineDisplayRecord {
-  let title = EVENT_TYPE_LABELS[ev.eventType] ?? ev.eventType;
-  let type: string = ev.eventType;
+): TimelineDisplayRecord | null {
+  if (isInvalidEventSummary(ev.summary)) return null;
 
-  try {
-    const parsed = JSON.parse(ev.summary) as {
-      type?: string;
-      recordType?: string;
-      substance?: string;
-      procedure?: string;
-    };
-    if (parsed.type === "structured_record") {
-      if (parsed.recordType === "medication") {
-        title = parsed.substance || "Medicación";
-        type = "medication";
-      } else if (parsed.recordType === "surgery") {
-        title = parsed.procedure || "Cirugía";
-        type = "surgery";
-      } else if (parsed.recordType === "allergy") {
-        title = parsed.substance || "Alergia";
-        type = "allergy";
-      } else if (parsed.recordType === "consultation") {
-        title = "Consulta médica";
-        type = "consultation";
-      } else if (parsed.recordType) {
-        title = EVENT_TYPE_LABELS[parsed.recordType] ?? parsed.recordType;
-        type = parsed.recordType;
+  const structured = parseStructuredRecord(ev.summary);
+  let title = EVENT_TYPE_LABELS[ev.eventType] ?? ev.eventType;
+
+  let parsedRecordType: string | undefined;
+  if (!structured) {
+    try {
+      const parsed = JSON.parse(ev.summary) as {
+        type?: string;
+        recordType?: string;
+      };
+      if (parsed.type === "structured_record" && parsed.recordType) {
+        parsedRecordType = parsed.recordType;
+        title = eventTypeDisplayLabel(parsed.recordType);
+      }
+    } catch {
+      // plain summary
+    }
+
+    const plain = ev.summary?.trim();
+    if (plain && !plain.startsWith("{")) {
+      const headline = clinicalHeadlineFromSummary(plain);
+      const generic = EVENT_TYPE_LABELS[ev.eventType] ?? ev.eventType;
+      if (!parsedRecordType) {
+        title = headline;
+      } else if (title === generic || title === ev.eventType) {
+        title = headline;
       }
     }
-  } catch {
-    // plain summary
+  } else {
+    title = structured.title;
   }
 
-  const plain = ev.summary?.trim();
-  if (plain && !plain.startsWith("{")) {
-    const short = plain.length > 80 ? `${plain.slice(0, 80)}…` : plain;
-    const generic = EVENT_TYPE_LABELS[ev.eventType] ?? ev.eventType;
-    if (title === generic || title === ev.eventType) {
-      title = short;
-    }
-  }
+  const longDetail = eventDetailFromRecord(ev);
+  const structuredDetail = structured
+    ? formatStructuredRecordDescription(ev.summary, title)
+    : undefined;
+  let description = longDetail ?? structuredDetail;
+  if (description?.trim() === title.trim()) description = undefined;
+
+  const typeKey = structured?.recordType ?? parsedRecordType ?? ev.eventType;
 
   return {
     id: ev.entityKey,
     title,
-    type,
+    type: typeKey,
+    typeLabel: eventTypeDisplayLabel(typeKey),
     date: new Date(ev.timestamp).toLocaleDateString("es-AR"),
     institution: HOSPITALS.find((h) => h.id === ev.hospitalId)?.name,
     status: "verified",
-    description: formatEventDescription(ev.summary),
+    doctor: ev.authorDisplayName,
+    authorIdentityId: ev.authorIdentityId,
+    description,
     isPinned: pinnedIds?.has(ev.entityKey),
+    rawSummary: ev.summary,
   };
 }
 
@@ -102,6 +103,7 @@ export function filterTimelineEvents(
 ): ClinicalEventRecord[] {
   return events.filter((ev) => {
     if (!isTimelineEvent(ev)) return false;
+    if (isInvalidEventSummary(ev.summary)) return false;
 
     let recordType: string | null = null;
     try {

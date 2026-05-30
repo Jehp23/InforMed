@@ -10,6 +10,7 @@
     "hello-arkiv": "tsx scripts/hello-arkiv.ts",
     "seed": "tsx scripts/seed.ts",
     "cleanup": "tsx scripts/cleanup-presentation.ts",
+    "cleanup:invalid": "tsx scripts/delete-invalid-events.ts",
     "vercel:env": "bash scripts/sync-vercel-env.sh"
   },
   "dependencies": {

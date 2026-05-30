@@ -8,6 +8,7 @@ export type TimelineRecord = {
   id: string;
   title: string;
   type: string;
+  typeLabel?: string;
   date: string;
   institution?: string;
   doctor?: string;

@@ -68,6 +68,9 @@ export function entityToClinicalRecord(
     ...payload,
     entityKey: entity.key,
     creator: entity.creator,
+    ...(attrs.authorIdentityId
+      ? { authorIdentityId: attrs.authorIdentityId }
+      : {}),
   };
 }
 

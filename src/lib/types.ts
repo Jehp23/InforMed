@@ -31,7 +31,10 @@ export interface ClinicalEventPayload {
   patientId: string;
   hospitalId: string;
   eventType: EventType;
+  /** Resumen breve (timeline, chips). */
   summary: string;
+  /** Texto largo opcional (modal). */
+  detail?: string;
   timestamp: string;
 }
 
@@ -39,6 +42,10 @@ export interface ClinicalEventRecord extends ClinicalEventPayload {
   entityKey: string;
   txHash?: string;
   creator?: string;
+  /** Identidad Arkiv del profesional que publicó el registro. */
+  authorIdentityId?: string;
+  /** Nombre resuelto desde la entidad de identidad (API). */
+  authorDisplayName?: string;
 }
 
 export interface CreateEventBody {
@@ -46,6 +53,7 @@ export interface CreateEventBody {
   hospitalId: string;
   eventType: EventType;
   summary: string;
+  detail?: string;
   authorIdentityId?: string;
 }
 
@@ -56,14 +64,20 @@ export type StructuredRecordFormData = {
 export type TimelineDisplayRecord = {
   id: string;
   title: string;
+  /** Clave técnica (allergy, consultation, …) para colores y filtros. */
   type: string;
+  /** Etiqueta en español para la UI. */
+  typeLabel: string;
   date: string;
   institution?: string;
   doctor?: string;
+  authorIdentityId?: string;
   status: ValidationStatus;
   hasDocument?: boolean;
   importance?: "critical" | "important" | "routine";
   isPinned?: boolean;
   description?: string;
   notes?: string;
+  /** Resumen on-chain para parsear registros estructurados en el modal. */
+  rawSummary?: string;
 };

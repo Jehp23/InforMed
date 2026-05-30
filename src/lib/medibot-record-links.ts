@@ -1,4 +1,6 @@
+import { eventTitleFromRecord } from "@/lib/clinical-event-text";
 import { normalizeAllergySubstance } from "@/lib/derive-patient-summary";
+import { EVENT_SUMMARY_MAX } from "@/lib/event-field-limits";
 import { isTimelineEvent } from "@/lib/timeline-utils";
 import { EVENT_TYPE_LABELS, HOSPITALS } from "@/lib/constants";
 import type { ClinicalEventRecord, EventType } from "@/lib/types";
@@ -12,7 +14,7 @@ export type RecordLinkPhrase = {
   meta?: string;
 };
 
-const MAX_LINK_PHRASE_LEN = 48;
+const MAX_LINK_PHRASE_LEN = EVENT_SUMMARY_MAX;
 const MIN_LINK_PHRASE_LEN = 5;
 
 /** Texto enlazable en el chat (evita frases demasiado largas). */
@@ -59,10 +61,11 @@ export function collectRecordLinkPhrases(events: ClinicalEventRecord[]): RecordL
 
     const plain = ev.summary?.trim();
     if (!plain || plain.startsWith("{")) continue;
+    const title = eventTitleFromRecord(ev);
 
     if (ev.eventType === "allergy") {
-      const substance = normalizeAllergySubstance(plain);
-      pushPhrase(out, seen, substance, ev.entityKey, plain, substance, "allergy");
+      const substance = normalizeAllergySubstance(title);
+      pushPhrase(out, seen, substance, ev.entityKey, title, substance, "allergy");
       continue;
     }
 
@@ -84,8 +87,8 @@ export function collectRecordLinkPhrases(events: ClinicalEventRecord[]): RecordL
     }
 
     const typeLabel = shortLabelForEvent(ev.eventType);
-    const linkText = linkPhraseForSummary(plain);
-    pushPhrase(out, seen, linkText, ev.entityKey, plain, typeLabel, ev.eventType);
+    const linkText = linkPhraseForSummary(title);
+    pushPhrase(out, seen, linkText, ev.entityKey, title, typeLabel, ev.eventType);
   }
 
   return out.sort((a, b) => b.phrase.length - a.phrase.length);

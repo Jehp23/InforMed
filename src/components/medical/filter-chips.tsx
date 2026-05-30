@@ -1,6 +1,6 @@
 "use client";
 
-const FILTERS = [
+export const HISTORY_FILTERS = [
   { id: "all", label: "Todos" },
   { id: "allergies", label: "Alergias" },
   { id: "hospitalizations", label: "Internaciones" },
@@ -13,7 +13,7 @@ const FILTERS = [
 export function FilterChips({ activeFilter, onFilterChange }: { activeFilter: string; onFilterChange: (filter: string) => void }) {
   return (
     <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
-      {FILTERS.map((filter) => (
+      {HISTORY_FILTERS.map((filter) => (
         <button
           key={filter.id}
           onClick={() => onFilterChange(filter.id)}

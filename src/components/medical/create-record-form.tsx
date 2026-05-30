@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from "react";
 
+import {
+  EVENT_DETAIL_MAX,
+  EVENT_SUMMARY_MAX,
+  validateEventDetail,
+  validateEventSummary,
+} from "@/lib/event-field-limits";
+import { validateStructuredRecordPayload } from "@/lib/structured-record";
 import { UI_COPY } from "@/lib/ui-copy";
 import type { EventType, StructuredRecordFormData } from "@/lib/types";
 
@@ -51,7 +58,7 @@ export function CreateRecordForm({
   initialEventType,
 }: {
   embedded?: boolean;
-  onQuickSubmit: (eventType: EventType, summary: string) => void;
+  onQuickSubmit: (eventType: EventType, summary: string, detail?: string) => void;
   onSubmit: (data: StructuredRecordFormData) => void;
   onCancel: () => void;
   submitting?: boolean;
@@ -60,6 +67,8 @@ export function CreateRecordForm({
 }) {
   const [eventType, setEventType] = useState<EventType>(initialEventType ?? "allergy");
   const [summary, setSummary] = useState(initialSummary ?? "");
+  const [detail, setDetail] = useState("");
+  const [fieldError, setFieldError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [recordType, setRecordType] = useState("");
   const [formData, setFormData] = useState<Record<string, string>>({});
@@ -74,13 +83,29 @@ export function CreateRecordForm({
 
   const handleQuickSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!summary.trim()) return;
-    onQuickSubmit(eventType, summary.trim());
+    const err =
+      validateEventSummary(summary) ?? validateEventDetail(detail);
+    if (err) {
+      setFieldError(err);
+      return;
+    }
+    setFieldError(null);
+    onQuickSubmit(eventType, summary.trim(), detail.trim() || undefined);
   };
+
+  const clampSummary = (value: string) => value.slice(0, EVENT_SUMMARY_MAX);
+  const clampDetail = (value: string) => value.slice(0, EVENT_DETAIL_MAX);
 
   const handleAdvancedSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ recordType, ...formData });
+    const payload = { recordType, ...formData };
+    const err = validateStructuredRecordPayload(payload);
+    if (err) {
+      setFieldError(err);
+      return;
+    }
+    setFieldError(null);
+    onSubmit(payload);
   };
 
   const handleTypeChange = (type: string) => {
@@ -102,7 +127,10 @@ export function CreateRecordForm({
               <input
                 type="text"
                 value={formData.substance || ""}
-                onChange={(e) => handleFieldChange("substance", e.target.value)}
+                onChange={(e) =>
+                  handleFieldChange("substance", e.target.value.slice(0, EVENT_SUMMARY_MAX))
+                }
+                maxLength={EVENT_SUMMARY_MAX}
                 className="med-input text-sm"
                 placeholder="Penicilina"
               />
@@ -111,9 +139,13 @@ export function CreateRecordForm({
               <label className="mb-1 block text-xs text-med-muted">Observaciones</label>
               <textarea
                 value={formData.observations || ""}
-                onChange={(e) => handleFieldChange("observations", e.target.value)}
+                onChange={(e) =>
+                  handleFieldChange("observations", e.target.value.slice(0, EVENT_DETAIL_MAX))
+                }
+                maxLength={EVENT_DETAIL_MAX}
                 className="med-input text-sm"
-                rows={2}
+                rows={3}
+                placeholder="Reacción, severidad, fecha de diagnóstico…"
               />
             </div>
           </>
@@ -147,7 +179,10 @@ export function CreateRecordForm({
             <label className="mb-1 block text-xs text-med-muted">Descripción</label>
             <textarea
               value={formData.description || ""}
-              onChange={(e) => handleFieldChange("description", e.target.value)}
+              onChange={(e) =>
+                handleFieldChange("description", e.target.value.slice(0, EVENT_DETAIL_MAX))
+              }
+              maxLength={EVENT_DETAIL_MAX}
               className="med-input text-sm"
               rows={3}
             />
@@ -192,6 +227,8 @@ export function CreateRecordForm({
                   onClick={() => {
                     setEventType(type.id);
                     setSummary("");
+                    setDetail("");
+                    setFieldError(null);
                   }}
                   className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition ${
                     eventType === type.id
@@ -206,17 +243,51 @@ export function CreateRecordForm({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-med-ink-soft">
-              Descripción
-            </label>
-            <textarea
+            <div className="mb-1.5 flex items-baseline justify-between gap-2">
+              <label className="text-sm font-semibold text-med-ink-soft">
+                Resumen del evento
+              </label>
+              <span className="text-[11px] text-med-muted">
+                {summary.length}/{EVENT_SUMMARY_MAX}
+              </span>
+            </div>
+            <input
+              type="text"
               value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              className="med-input min-h-[96px] text-sm"
+              onChange={(e) => setSummary(clampSummary(e.target.value))}
+              maxLength={EVENT_SUMMARY_MAX}
+              className="med-input text-sm"
               placeholder={QUICK_TYPES.find((t) => t.id === eventType)?.placeholder}
               required
             />
+            <p className="mt-1 text-[11px] text-med-muted">
+              Título breve para el historial (sustancia, motivo o resultado).
+            </p>
           </div>
+
+          <div>
+            <div className="mb-1.5 flex items-baseline justify-between gap-2">
+              <label className="text-sm font-semibold text-med-ink-soft">
+                Detalle <span className="font-normal text-med-muted">(opcional)</span>
+              </label>
+              <span className="text-[11px] text-med-muted">
+                {detail.length}/{EVENT_DETAIL_MAX}
+              </span>
+            </div>
+            <textarea
+              value={detail}
+              onChange={(e) => setDetail(clampDetail(e.target.value))}
+              maxLength={EVENT_DETAIL_MAX}
+              className="med-input min-h-[88px] text-sm"
+              placeholder="Reacción, contexto, indicaciones…"
+            />
+          </div>
+
+          {fieldError && (
+            <p className="rounded-lg border border-med-coral/25 bg-[rgba(224,101,76,.06)] px-3 py-2 text-sm text-med-coral">
+              {fieldError}
+            </p>
+          )}
 
           <button
             type="submit"
@@ -236,6 +307,11 @@ export function CreateRecordForm({
         </form>
       ) : (
         <form onSubmit={handleAdvancedSubmit} className="mt-5 space-y-4" aria-busy={submitting}>
+          {fieldError && (
+            <p className="rounded-lg border border-med-coral/25 bg-[rgba(224,101,76,.06)] px-3 py-2 text-sm text-med-coral">
+              {fieldError}
+            </p>
+          )}
           <div>
             <label className="mb-2 block text-xs text-med-muted">Tipo de registro</label>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
