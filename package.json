@@ -9,7 +9,8 @@
     "lint": "eslint",
     "hello-arkiv": "tsx scripts/hello-arkiv.ts",
     "seed": "tsx scripts/seed.ts",
-    "cleanup": "tsx scripts/cleanup-presentation.ts"
+    "cleanup": "tsx scripts/cleanup-presentation.ts",
+    "vercel:env": "bash scripts/sync-vercel-env.sh"
   },
   "dependencies": {
     "@arkiv-network/sdk": "^0.6.8",

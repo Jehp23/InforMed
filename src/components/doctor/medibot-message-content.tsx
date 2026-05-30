@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, type ReactNode } from "react";
+import { Fragment } from "react";
 
 import { EventTypeLegend } from "@/components/doctor/event-type-legend";
 import {

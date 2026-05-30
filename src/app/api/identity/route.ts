@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { Hex } from "@arkiv-network/sdk";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 export const dynamic = "force-dynamic";
 
 import { ENTITY_EXPLORER_BASE } from "@/lib/constants";

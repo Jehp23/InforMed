@@ -15,7 +15,7 @@ Los historiales están fragmentados por hospital y un registro central puede alt
 ## Setup rápido
 
 ```bash
-cd medtrail
+cd InforMed
 cp .env.example .env
 # Editá PRIVATE_KEY (0x + 64 hex). Faucet: https://braga.hoodi.arkiv.network/faucet
 
@@ -26,6 +26,31 @@ npm run dev
 ```
 
 Abrí [http://localhost:3000](http://localhost:3000).
+
+## Deploy en Vercel
+
+**Producción:** [https://infor-med.vercel.app](https://infor-med.vercel.app)
+
+El proyecto está enlazado a `Jehp23/InforMed` en GitHub: cada push a `main` dispara un deploy automático.
+
+### Variables de entorno (obligatorias en Vercel)
+
+| Variable | Uso |
+|----------|-----|
+| `PRIVATE_KEY` | Wallet Arkiv (solo servidor) |
+| `GROQ_API_KEY` | MediBot / asistente (recomendado) |
+
+Configuralas en [Vercel → infor-med → Settings → Environment Variables](https://vercel.com/jehp23s-projects/infor-med/settings/environment-variables), o desde local:
+
+```bash
+cp .env.example .env   # completar claves
+./scripts/sync-vercel-env.sh
+vercel deploy --prod --yes
+```
+
+### MCP de Vercel en Cursor
+
+Si el plugin Vercel MCP aparece como *Not connected*, activalo en **Cursor Settings → MCP** para inspeccionar deploys y logs desde el chat. El deploy también funciona con `vercel` CLI (`vercel whoami`).
 
 ## Demo (2 min)
 
