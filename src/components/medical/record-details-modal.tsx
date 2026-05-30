@@ -2,6 +2,7 @@
 
 import { ValidationBadge } from "./validation-badge";
 import { ArkivIdBadge } from "@/components/ui/arkiv-id-badge";
+import { ArkivVerifyLinks } from "@/components/ui/arkiv-verify-links";
 import { eventTypeDisplayLabel } from "@/lib/event-display-labels";
 import { parseStructuredRecord } from "@/lib/structured-record";
 import { UI_COPY } from "@/lib/ui-copy";
@@ -20,6 +21,7 @@ type RecordDetails = Pick<
   | "status"
   | "description"
   | "rawSummary"
+  | "txHash"
 >;
 
 export function RecordDetailsModal({
@@ -144,11 +146,16 @@ export function RecordDetailsModal({
               )
             )}
 
-            <div className="inline-flex max-w-full items-center gap-2 rounded-lg bg-med-secondary-soft px-3 py-2 text-sm font-semibold text-med-secondary">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" className="h-4 w-4 shrink-0" aria-hidden>
-                <path d="M20 6 9 17l-5-5" />
-              </svg>
-              <span className="min-w-0 break-words">{UI_COPY.verifiedRecord}</span>
+            <div className="rounded-lg border border-med-secondary/25 bg-med-secondary-soft/60 p-3">
+              <p className="text-xs font-semibold text-med-secondary">{UI_COPY.verifiedRecord}</p>
+              <p className="mt-0.5 text-[11px] text-med-muted">{UI_COPY.verifyOnArkiv}</p>
+              <div className="mt-3">
+                <ArkivVerifyLinks
+                  entityKey={record.id}
+                  txHash={record.txHash}
+                  layout="stack"
+                />
+              </div>
             </div>
           </div>
         </div>

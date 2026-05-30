@@ -28,6 +28,7 @@ import { HistoryTabsPanel } from "@/components/medical/history-tabs-panel";
 import { CreateRecordForm } from "@/components/medical/create-record-form";
 import { RecordDetailsModal } from "@/components/medical/record-details-modal";
 import { AppShell } from "@/components/ui/app-shell";
+import { toastPayloadWithArkivVerify } from "@/components/ui/arkiv-verify-links";
 import { AppToast, type ToastPayload } from "@/components/ui/app-toast";
 import { DemoTour, type DemoTourStep } from "@/components/ui/demo-tour";
 import { PatientLoadingOverlay } from "@/components/ui/patient-loading-overlay";
@@ -54,6 +55,12 @@ const EMPTY_PATIENT: PatientData = {
   allergies: [],
   diagnosis: "",
   status: "—",
+};
+
+type CreateEventApiResponse = {
+  entityKey?: string;
+  txHash?: string;
+  error?: string;
 };
 
 const DOCTOR_TOUR_STEPS: DemoTourStep[] = [
@@ -300,24 +307,32 @@ export function MedtrailApp({
     setSubmitting(true);
     setActionError(null);
     try {
-      const { ok, data: apiData, error } = await fetchJson<{ error?: string }>("/api/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          patientId,
-          hospitalId,
-          eventType,
-          summary,
-          ...(detail ? { detail } : {}),
-          authorIdentityId: session.arkivId,
-        }),
-      });
+      const { ok, data: apiData, error } = await fetchJson<CreateEventApiResponse>(
+        "/api/events",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            patientId,
+            hospitalId,
+            eventType,
+            summary,
+            ...(detail ? { detail } : {}),
+            authorIdentityId: session.arkivId,
+          }),
+        },
+      );
       if (!ok) throw new Error(error ?? apiData?.error ?? "Error al registrar");
-      setToast({
-        title: UI_COPY.recordSaved,
-        message: UI_COPY.recordSavedDetail,
-        verified: true,
-      });
+      setToast(
+        toastPayloadWithArkivVerify(
+          {
+            title: UI_COPY.recordSaved,
+            message: UI_COPY.recordSavedDetail,
+            verified: true,
+          },
+          { entityKey: apiData?.entityKey, txHash: apiData?.txHash },
+        ),
+      );
       await reload(patientId);
       setShowCreateForm(false);
       setRecordDraftSeed(null);
@@ -333,23 +348,31 @@ export function MedtrailApp({
     setSubmitting(true);
     setActionError(null);
     try {
-      const { ok, data: apiData, error } = await fetchJson<{ error?: string }>("/api/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          patientId,
-          hospitalId,
-          eventType: "note" as EventType,
-          summary: JSON.stringify({ type: "structured_record", ...data }),
-          authorIdentityId: session.arkivId,
-        }),
-      });
+      const { ok, data: apiData, error } = await fetchJson<CreateEventApiResponse>(
+        "/api/events",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            patientId,
+            hospitalId,
+            eventType: "note" as EventType,
+            summary: JSON.stringify(data),
+            authorIdentityId: session.arkivId,
+          }),
+        },
+      );
       if (!ok) throw new Error(error ?? apiData?.error ?? "Error al registrar");
-      setToast({
-        title: UI_COPY.recordSaved,
-        message: UI_COPY.recordSavedDetail,
-        verified: true,
-      });
+      setToast(
+        toastPayloadWithArkivVerify(
+          {
+            title: UI_COPY.recordSaved,
+            message: UI_COPY.recordSavedDetail,
+            verified: true,
+          },
+          { entityKey: apiData?.entityKey, txHash: apiData?.txHash },
+        ),
+      );
       await reload(patientId);
       setShowCreateForm(false);
       setRecordDraftSeed(null);

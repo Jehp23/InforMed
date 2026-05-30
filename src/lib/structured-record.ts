@@ -4,19 +4,13 @@ import {
   isTestOrSpamSummary,
   validateEventDetail,
 } from "./event-field-limits";
+import {
+  eventTypeDisplayLabel,
+  STRUCTURED_RECORD_TYPE_LABELS,
+  translateTypeToken,
+} from "./event-display-labels";
 
-export const STRUCTURED_RECORD_TYPE_LABELS: Record<string, string> = {
-  consultation: "Consulta médica",
-  hospitalization: "Internación",
-  surgery: "Cirugía",
-  allergy: "Alergia o reacción",
-  medication: "Medicación",
-  study: "Estudio o análisis",
-  diagnosis: "Diagnóstico",
-  vaccine: "Vacuna",
-  document: "Documento médico",
-  other: "Otro registro",
-};
+export { STRUCTURED_RECORD_TYPE_LABELS };
 
 const FIELD_LABELS: Record<string, string> = {
   substance: "Sustancia",
@@ -27,7 +21,14 @@ const FIELD_LABELS: Record<string, string> = {
   description: "Descripción",
   diagnosis: "Diagnóstico",
   observations: "Observaciones",
+  recordTypeLabel: "Tipo",
 };
+
+const STRUCTURED_META_KEYS = new Set([
+  "type",
+  "recordType",
+  "recordTypeLabel",
+]);
 
 export type ParsedStructuredRecord = {
   recordType: string;
@@ -36,30 +37,95 @@ export type ParsedStructuredRecord = {
   fields: Array<{ key: string; label: string; value: string }>;
 };
 
+function resolveRecordTypeLabel(
+  recordType: string,
+  storedLabel?: unknown,
+): string {
+  const fromStore = String(storedLabel ?? "").trim();
+  if (fromStore && fromStore.toLowerCase() !== recordType.toLowerCase()) {
+    return fromStore;
+  }
+  return eventTypeDisplayLabel(recordType);
+}
+
+function resolveStructuredTitle(
+  recordType: string,
+  recordTypeLabel: string,
+  parsed: Record<string, unknown>,
+): string {
+  if (recordType === "medication" && parsed.substance) {
+    return displayLabelFromSummary(String(parsed.substance), 80) || recordTypeLabel;
+  }
+  if (recordType === "surgery" && parsed.procedure) {
+    return displayLabelFromSummary(String(parsed.procedure), 80) || recordTypeLabel;
+  }
+  if (recordType === "allergy" && parsed.substance) {
+    return displayLabelFromSummary(String(parsed.substance), 80) || recordTypeLabel;
+  }
+  if (parsed.description) {
+    const head = String(parsed.description).split("—")[0]?.trim();
+    const fromDesc =
+      displayLabelFromSummary(head || String(parsed.description), 80) || "";
+    if (fromDesc && fromDesc.toLowerCase() !== recordType.toLowerCase()) {
+      return fromDesc;
+    }
+  }
+  return recordTypeLabel;
+}
+
+export function enrichStructuredRecordPayload(
+  data: Record<string, string>,
+): Record<string, string> {
+  const recordType = data.recordType?.trim().toLowerCase();
+  if (!recordType) return data;
+
+  const recordTypeLabel = eventTypeDisplayLabel(recordType);
+  return {
+    ...data,
+    type: "structured_record",
+    recordType,
+    recordTypeLabel,
+  };
+}
+
+export function enrichStructuredRecordSummary(summary: string): string {
+  try {
+    const parsed = JSON.parse(summary) as Record<string, string>;
+    if (parsed.type !== "structured_record" || !parsed.recordType?.trim()) {
+      return summary;
+    }
+    return JSON.stringify(enrichStructuredRecordPayload(parsed));
+  } catch {
+    return summary;
+  }
+}
+
 export function parseStructuredRecord(summary: string): ParsedStructuredRecord | null {
   try {
     const parsed = JSON.parse(summary) as Record<string, unknown>;
     if (parsed.type !== "structured_record" || !parsed.recordType) return null;
 
-    const recordType = String(parsed.recordType);
-    const recordTypeLabel =
-      STRUCTURED_RECORD_TYPE_LABELS[recordType] ?? recordType;
+    const recordType = String(parsed.recordType).trim().toLowerCase();
+    const recordTypeLabel = resolveRecordTypeLabel(
+      recordType,
+      parsed.recordTypeLabel,
+    );
 
-    let title = recordTypeLabel;
-    if (recordType === "medication" && parsed.substance) {
-      title = displayLabelFromSummary(String(parsed.substance), 80) || title;
-    } else if (recordType === "surgery" && parsed.procedure) {
-      title = displayLabelFromSummary(String(parsed.procedure), 80) || title;
-    } else if (recordType === "allergy" && parsed.substance) {
-      title = displayLabelFromSummary(String(parsed.substance), 80) || title;
-    } else if (parsed.description) {
-      const head = String(parsed.description).split("—")[0]?.trim();
-      title = displayLabelFromSummary(head || String(parsed.description), 80) || title;
+    let title = resolveStructuredTitle(recordType, recordTypeLabel, parsed);
+    if (title.toLowerCase() === recordType.toLowerCase()) {
+      title = recordTypeLabel;
+    }
+    title = translateTypeToken(title);
+    if (title.toLowerCase() === recordType.toLowerCase()) {
+      title = recordTypeLabel;
     }
 
-    const fields: ParsedStructuredRecord["fields"] = [];
+    const fields: ParsedStructuredRecord["fields"] = [
+      { key: "recordTypeLabel", label: "Tipo", value: recordTypeLabel },
+    ];
+
     for (const [key, value] of Object.entries(parsed)) {
-      if (key === "type" || key === "recordType" || value === undefined || value === "") {
+      if (STRUCTURED_META_KEYS.has(key) || value === undefined || value === "") {
         continue;
       }
       const raw = String(value).trim();
@@ -69,7 +135,7 @@ export function parseStructuredRecord(summary: string): ParsedStructuredRecord |
       const display =
         raw.length > EVENT_DETAIL_MAX
           ? `${raw.slice(0, EVENT_DETAIL_MAX - 1)}…`
-          : raw;
+          : translateTypeToken(raw);
       fields.push({ key, label, value: display });
     }
 
@@ -85,7 +151,7 @@ export function validateStructuredRecordPayload(
   if (!data.recordType?.trim()) return "Elegí un tipo de registro.";
 
   for (const [key, value] of Object.entries(data)) {
-    if (key === "recordType" || !value.trim()) continue;
+    if (STRUCTURED_META_KEYS.has(key) || !value.trim()) continue;
     if (isTestOrSpamSummary(value)) {
       return "Hay texto de prueba en el formulario. Completá con datos clínicos reales.";
     }
@@ -94,7 +160,7 @@ export function validateStructuredRecordPayload(
   }
 
   const hasContent = Object.entries(data).some(
-    ([k, v]) => k !== "recordType" && v.trim().length > 0,
+    ([k, v]) => !STRUCTURED_META_KEYS.has(k) && v.trim().length > 0,
   );
   if (!hasContent) return "Completá al menos un campo del registro.";
 
@@ -115,7 +181,7 @@ export function isInvalidStructuredRecordSummary(summary: string): boolean {
     }
     return false;
   }
-  if (parsed.fields.length === 0) return true;
+  if (parsed.fields.length <= 1) return true;
   return false;
 }
 
@@ -127,7 +193,13 @@ export function formatStructuredRecordDescription(
   if (!parsed || parsed.fields.length === 0) return undefined;
 
   const lines = parsed.fields
-    .filter((f) => f.label !== "Tipo" && f.value !== displayTitle)
+    .filter(
+      (f) =>
+        f.key !== "recordTypeLabel" &&
+        f.label !== "Tipo" &&
+        f.value !== displayTitle &&
+        f.value !== parsed.recordTypeLabel,
+    )
     .map((f) => `${f.label}: ${f.value}`);
 
   return lines.length > 0 ? lines.join("\n") : undefined;

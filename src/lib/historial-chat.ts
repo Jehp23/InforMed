@@ -5,6 +5,8 @@ import {
   deriveClinicalSummaryFromEvents,
 } from "./derive-patient-summary";
 import { buildRuleBasedHandoff } from "./summary";
+import { eventTypeDisplayLabel } from "./event-display-labels";
+import { parseStructuredRecord } from "./structured-record";
 import { EVENT_TYPE_LABELS, HOSPITALS } from "./constants";
 
 export type HistorialChatTurn = {
@@ -55,7 +57,10 @@ function buildChatContext(events: ClinicalEventRecord[]) {
     },
     eventos: timeline.map((e) => ({
       eventType: e.eventType,
-      label: EVENT_TYPE_LABELS[e.eventType] ?? e.eventType,
+      label:
+        parseStructuredRecord(e.summary)?.recordTypeLabel ??
+        EVENT_TYPE_LABELS[e.eventType] ??
+        eventTypeDisplayLabel(e.eventType),
       summary: e.summary,
       hospital: HOSPITALS.find((h) => h.id === e.hospitalId)?.name ?? e.hospitalId,
       timestamp: e.timestamp,

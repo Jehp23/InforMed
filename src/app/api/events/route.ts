@@ -11,7 +11,10 @@ import {
 import { enrichEventsWithAuthorNames } from "@/lib/resolve-event-authors";
 import { trimEventFields, validateEventFields } from "@/lib/clinical-event-text";
 import { isInvalidEventSummary } from "@/lib/event-field-limits";
-import { validateStructuredRecordPayload } from "@/lib/structured-record";
+import {
+  enrichStructuredRecordSummary,
+  validateStructuredRecordPayload,
+} from "@/lib/structured-record";
 import type { CreateEventBody, EventType } from "@/lib/types";
 
 const VALID_TYPES: EventType[] = [
@@ -84,6 +87,7 @@ export async function POST(request: Request) {
     if (isInvalidEventSummary(trimmedSummary)) {
       return NextResponse.json({ error: "Registro de prueba no permitido" }, { status: 400 });
     }
+    payloadSummary = enrichStructuredRecordSummary(trimmedSummary);
   } else {
     const fields = trimEventFields(trimmedSummary, payloadDetail);
     const validationError = validateEventFields(fields.summary, fields.detail);

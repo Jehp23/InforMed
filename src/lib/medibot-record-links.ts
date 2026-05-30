@@ -1,6 +1,8 @@
 import { eventTitleFromRecord } from "@/lib/clinical-event-text";
 import { normalizeAllergySubstance } from "@/lib/derive-patient-summary";
+import { eventTypeDisplayLabel } from "@/lib/event-display-labels";
 import { EVENT_SUMMARY_MAX } from "@/lib/event-field-limits";
+import { parseStructuredRecord } from "@/lib/structured-record";
 import { isTimelineEvent } from "@/lib/timeline-utils";
 import { EVENT_TYPE_LABELS, HOSPITALS } from "@/lib/constants";
 import type { ClinicalEventRecord, EventType } from "@/lib/types";
@@ -47,8 +49,10 @@ function hospitalName(id: string) {
   return HOSPITALS.find((h) => h.id === id)?.name ?? id;
 }
 
-function shortLabelForEvent(eventType: EventType): string {
-  return EVENT_TYPE_LABELS[eventType] ?? eventType;
+function shortLabelForEvent(ev: ClinicalEventRecord): string {
+  const structured = parseStructuredRecord(ev.summary);
+  if (structured) return structured.recordTypeLabel;
+  return EVENT_TYPE_LABELS[ev.eventType] ?? eventTypeDisplayLabel(ev.eventType);
 }
 
 /** Frases cortas para enlazar registros en el chat (con color por eventType). */
@@ -60,7 +64,25 @@ export function collectRecordLinkPhrases(events: ClinicalEventRecord[]): RecordL
     if (!isTimelineEvent(ev)) continue;
 
     const plain = ev.summary?.trim();
-    if (!plain || plain.startsWith("{")) continue;
+    if (!plain) continue;
+
+    const structured = parseStructuredRecord(plain);
+    if (structured) {
+      const typeLabel = structured.recordTypeLabel;
+      const linkText = linkPhraseForSummary(structured.title);
+      pushPhrase(
+        out,
+        seen,
+        linkText,
+        ev.entityKey,
+        structured.title,
+        typeLabel,
+        ev.eventType,
+      );
+      continue;
+    }
+
+    if (plain.startsWith("{")) continue;
     const title = eventTitleFromRecord(ev);
 
     if (ev.eventType === "allergy") {
@@ -73,7 +95,7 @@ export function collectRecordLinkPhrases(events: ClinicalEventRecord[]): RecordL
       const dateStr = new Date(ev.timestamp).toLocaleDateString("es-AR");
       const hosp = hospitalName(ev.hospitalId);
       const meta = `${dateStr} · ${hosp}`;
-      const shortLabel = shortLabelForEvent(ev.eventType);
+      const shortLabel = shortLabelForEvent(ev);
       out.push({
         phrase: dateStr,
         recordId: ev.entityKey,
@@ -86,7 +108,7 @@ export function collectRecordLinkPhrases(events: ClinicalEventRecord[]): RecordL
       continue;
     }
 
-    const typeLabel = shortLabelForEvent(ev.eventType);
+    const typeLabel = shortLabelForEvent(ev);
     const linkText = linkPhraseForSummary(title);
     pushPhrase(out, seen, linkText, ev.entityKey, title, typeLabel, ev.eventType);
   }

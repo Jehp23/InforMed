@@ -80,4 +80,6 @@ export type TimelineDisplayRecord = {
   notes?: string;
   /** Resumen on-chain para parsear registros estructurados en el modal. */
   rawSummary?: string;
+  /** Hash de la transacción de creación (si está disponible). */
+  txHash?: string;
 };

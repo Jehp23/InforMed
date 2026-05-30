@@ -93,6 +93,7 @@ export function eventToTimelineRecord(
     description,
     isPinned: pinnedIds?.has(ev.entityKey),
     rawSummary: ev.summary,
+    txHash: ev.txHash,
   };
 }
 

@@ -1,3 +1,4 @@
+import { translateTypeToken } from "./event-display-labels";
 import {
   EVENT_SUMMARY_MAX,
   validateEventDetail,
@@ -24,7 +25,8 @@ export function clinicalHeadlineFromSummary(summary: string): string {
   const trimmed = summary.trim();
   if (!trimmed || trimmed.startsWith("{")) return trimmed;
   const head = trimmed.split("—")[0]?.trim();
-  return head || trimmed;
+  const candidate = head || trimmed;
+  return translateTypeToken(candidate);
 }
 
 /** Título corto para timeline y chips. */

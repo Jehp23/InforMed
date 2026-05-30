@@ -8,7 +8,10 @@ import {
   validateEventDetail,
   validateEventSummary,
 } from "@/lib/event-field-limits";
-import { validateStructuredRecordPayload } from "@/lib/structured-record";
+import {
+  enrichStructuredRecordPayload,
+  validateStructuredRecordPayload,
+} from "@/lib/structured-record";
 import { UI_COPY } from "@/lib/ui-copy";
 import type { EventType, StructuredRecordFormData } from "@/lib/types";
 
@@ -98,7 +101,7 @@ export function CreateRecordForm({
 
   const handleAdvancedSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { recordType, ...formData };
+    const payload = enrichStructuredRecordPayload({ recordType, ...formData });
     const err = validateStructuredRecordPayload(payload);
     if (err) {
       setFieldError(err);
