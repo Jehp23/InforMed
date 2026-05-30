@@ -9,6 +9,7 @@ import {
   STRUCTURED_RECORD_TYPE_LABELS,
   translateTypeToken,
 } from "./event-display-labels";
+import type { StructuredRecordFormData } from "./types";
 
 export { STRUCTURED_RECORD_TYPE_LABELS };
 
@@ -74,8 +75,8 @@ function resolveStructuredTitle(
 }
 
 export function enrichStructuredRecordPayload(
-  data: Record<string, string>,
-): Record<string, string> {
+  data: StructuredRecordFormData,
+): StructuredRecordFormData {
   const recordType = data.recordType?.trim().toLowerCase();
   if (!recordType) return data;
 
@@ -94,7 +95,9 @@ export function enrichStructuredRecordSummary(summary: string): string {
     if (parsed.type !== "structured_record" || !parsed.recordType?.trim()) {
       return summary;
     }
-    return JSON.stringify(enrichStructuredRecordPayload(parsed));
+    return JSON.stringify(
+      enrichStructuredRecordPayload(parsed as StructuredRecordFormData),
+    );
   } catch {
     return summary;
   }
