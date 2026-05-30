@@ -1,0 +1,268 @@
+@import "tailwindcss";
+
+:root {
+  --med-primary: #F4F1E9;
+  --med-primary-2: #EDE8DC;
+  --med-secondary: #0E8C6B;
+  --med-secondary-hover: #16B886;
+  --med-secondary-soft: #C8E9D8;
+  --med-coral: #E0654C;
+  --med-amber: #D69A2E;
+  --med-ink: #0E2E29;
+  --med-ink-soft: #2C4A45;
+  --med-muted: #5C6F6A;
+  --med-line: rgba(14, 46, 41, 0.12);
+  --med-line-strong: rgba(14, 46, 41, 0.22);
+  --med-shadow: 0 24px 60px -28px rgba(14, 46, 41, 0.45);
+  --med-shadow-soft: 0 20px 50px -20px rgba(14, 46, 41, 0.22);
+
+  --foreground: #0E2E29;
+  --med-surface: #F4F1E9;
+  --med-surface-elevated: #EDE8DC;
+  --med-border: rgba(14, 46, 41, 0.12);
+  --med-border-strong: rgba(14, 46, 41, 0.22);
+}
+
+@theme inline {
+  --color-background: var(--med-primary);
+  --color-foreground: var(--foreground);
+  --color-med-primary: var(--med-primary);
+  --color-med-primary-2: var(--med-primary-2);
+  --color-med-secondary: var(--med-secondary);
+  --color-med-secondary-hover: var(--med-secondary-hover);
+  --color-med-secondary-soft: var(--med-secondary-soft);
+  --color-med-coral: var(--med-coral);
+  --color-med-amber: var(--med-amber);
+  --color-med-ink: var(--med-ink);
+  --color-med-ink-soft: var(--med-ink-soft);
+  --color-med-muted: var(--med-muted);
+  --color-med-line: var(--med-line);
+  --color-med-line-strong: var(--med-line-strong);
+  --color-med-bg: var(--med-primary);
+  --color-med-surface: var(--med-surface);
+  --color-med-surface-elevated: var(--med-surface-elevated);
+  --color-med-border: var(--med-border);
+  --color-med-border-strong: var(--med-border-strong);
+  --color-med-text: var(--foreground);
+  --font-sans: var(--font-body), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Títulos — Plus Jakarta Sans (legible, moderna, sin serif formal) */
+@utility font-fraunces {
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+/* Cuerpo — Inter (alta legibilidad, neutra) */
+@utility font-hanken {
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+@utility font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+@utility font-body {
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  background-color: var(--med-primary) !important;
+  color: var(--foreground);
+  font-family: var(--font-body), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@utility med-dot-grid {
+  background-image: radial-gradient(var(--med-line) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+@utility med-card {
+  background: white;
+  border: 1px solid var(--med-line);
+  border-radius: 20px;
+  box-shadow: var(--med-shadow);
+}
+
+@utility med-panel {
+  background: white;
+  border: 1px solid var(--med-line);
+  border-radius: 16px;
+  box-shadow: var(--med-shadow-soft);
+}
+
+@utility med-workspace {
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid var(--med-line);
+  background: white;
+  box-shadow: var(--med-shadow-soft);
+}
+
+@utility med-btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  border: none;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 14.5px;
+  font-weight: 600;
+  padding: 0.625rem 1.375rem;
+  border-radius: 999px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  background: var(--med-secondary);
+  color: white;
+  box-shadow: 0 8px 22px -10px var(--med-secondary);
+}
+
+@utility med-btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 14.5px;
+  font-weight: 600;
+  padding: 0.625rem 1.375rem;
+  border-radius: 999px;
+  transition: background 0.18s ease, border-color 0.18s ease;
+  background: transparent;
+  color: var(--med-ink);
+  border: 1px solid var(--med-line-strong);
+}
+
+.med-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -10px var(--med-secondary);
+}
+
+.med-btn-secondary:hover {
+  background: var(--med-primary-2);
+}
+
+@utility med-toolbar-btn {
+  display: inline-flex;
+  height: 2.25rem;
+  shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  border: 1px solid var(--med-line);
+  background: white;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--med-ink-soft);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.med-toolbar-btn:hover {
+  border-color: rgba(14, 140, 107, 0.4);
+}
+
+.med-toolbar-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (min-width: 1024px) {
+  .med-sticky-below-header {
+    position: sticky;
+    top: var(--app-header-h, 9.5rem);
+    align-self: start;
+  }
+}
+
+@utility med-toolbar-select {
+  height: 2.25rem;
+  min-width: 8.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(14, 46, 41, 0.12);
+  background: white;
+  padding-left: 0.5rem;
+  padding-right: 1.75rem;
+  font-size: 0.875rem;
+  color: var(--med-ink);
+}
+
+@utility med-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--med-line-strong);
+  border-radius: 12px;
+  background: white;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 14.5px;
+  color: var(--med-ink);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.med-input:focus {
+  outline: none;
+  border-color: var(--med-secondary);
+  box-shadow: 0 0 0 4px rgba(14, 140, 107, 0.13);
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--med-secondary) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--med-secondary);
+  border-radius: 3px;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
+.animate-bob {
+  animation: bob 5s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s ease-out both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
